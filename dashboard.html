@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electrical Load Optimization Simulator</title>
+  <!-- Bootstrap CSS -->
+  <link href="http://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <style>
+    body {
+      background-color: #f4f7fa;
+      font-family: 'Arial', sans-serif;
+    }
+    .header {
+      background: linear-gradient(90deg, #000000);
+      padding: 1.5rem 0;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .header-logo {
+      height: 60px;
+    }
+    .navbar-nav .nav-link {
+      color: #ffffff !important;
+      font-size: 1.1rem;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .navbar-nav .nav-link:hover {
+      color: #d4e3ff !important;
+      transform: translateY(-2px);
+    }
+    .navbar-nav .nav-link.active {
+      color: #ffd700 !important;
+      font-weight: 700;
+    }
+    .navbar-nav .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40%;
+      height: 3px;
+      background-color: #ffd700;
+      border-radius: 2px;
+    }
+    .form-container {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      margin-top: 1rem;
+    }
+    .nav-tabs .nav-link {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      margin-right: 0.5rem;
+    }
+    .nav-tabs .nav-link.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    .machine-list {
+      margin-bottom: 1rem;
+    }
+    .machine-entry {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background-color: #f9f9f9;
+    }
+    .product-image {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      max-height: 400px; /* Ukuran maksimum agar tidak terlalu besar */
+      object-fit: contain; /* Memastikan gambar menyesuaikan tanpa distorsi */
+      margin-bottom: 1rem;
+    }
+    .btn-add-machine {
+      background-color: #28a745;
+      border: none;
+      transition: background-color 0.3s;
+      margin-bottom: 1rem;
+    }
+    .btn-add-machine:hover {
+      background-color: #218838;
+    }
+    .btn-delete-machine {
+      background-color: #dc3545;
+      border: none;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+    .btn-delete-machine:hover {
+      background-color: #c82333;
+    }
+    .time-inputs {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .time-inputs .form-control {
+      width: 100px;
+      padding: 0.5rem 0.5rem;
+      font-size: 0.875rem;
+    }
+    .operating-hours-label {
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .btn-simulate, .btn-optimize {
+      background-color: #007bff;
+      border: none;
+      padding: 0.75rem 2rem;
+      font-size: 1.1rem;
+    }
+    .btn-simulate:hover, .btn-optimize:hover {
+      background-color: #0056b3;
+    }
+    .result-section {
+      margin-top: 2rem;
+      padding: 2rem;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+    .summary-table td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .summary-table td:first-child {
+      font-weight: bold;
+      width: 50%;
+    }
+    .schedule-item {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .schedule-item h4 {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #4a90e2;
+      margin-bottom: 0.5rem;
+    }
+    .machine-list-schedule {
+      margin-top: 0.5rem;
+      padding-left: 1rem;
+      list-style-type: disc;
+    }
+    .footer {
+      margin-top: 2rem;
+      padding: 1rem;
+      text-align: center;
+      color: #6c757d;
+    }
+    #resultsPlot {
+      max-width: 100%;
+      height: auto;
+    }
+    @media (max-width: 768px) {
+      .time-inputs {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .time-inputs .form-control {
+        width: 100%;
+      }
+      .navbar-nav {
+        margin-top: 1rem;
+      }
+      .navbar-nav .nav-link {
+        padding: 0.5rem 1rem;
+      }
+    }
+    .btn-delete-data {
+      background-color: #dc3545;
+      border: none;
+      padding: 0.75rem 2rem;
+      font-size: 1.1rem;
+    }
+    .btn-delete-data:hover {
+      background-color: #c82333;
+    }
+    .optimization-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    .summary-section {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .summary-section h5 {
+      color: #007bff;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .summary-table td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .summary-table td:first-child {
+      font-weight: 500;
+      color: #495057;
+    }
+    @media (max-width: 992px) {
+      .optimization-summary {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+    .ga-params-form {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .ga-params-form label {
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .ga-params-form .form-control {
+      font-size: 0.875rem;
+    }
+    .btn-save-ga {
+      background-color: #17a2b8;
+      border: none;
+      padding: 0.5rem 1.5rem;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+    .btn-save-ga:hover {
+      background-color: #138496;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container-fluid">
+      <div class="row align-items-center justify-content-between">
+        <div class="col-md-4">
+          <img src="logo_ukp.png" alt="Logo UKP" class="header-logo">
+        </div>
+        <div class="col-md-4 text-center">
+          <nav class="navbar navbar-expand-lg justify-content-center">
+            <div class="collapse navbar-collapse justify-content-center">
+              <ul class="navbar-nav">
+                <li class="nav-item">
+                  <a class="nav-link" href="index.html">Home</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link active" href="dashboard.html">Dashboard</a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <div class="col-md-4"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Input Data Section -->
+  <div class="container mt-5">
+    <!-- Form Container -->
+    <div class="form-container">
+      <h3 class="mb-4">Input Data</h3>
+
+      <!-- Tariff Selection -->
+      <div class="mb-4">
+        <label for="tariffSelect" class="form-label">Select Tariff Type:</label>
+        <select class="form-select" id="tariffSelect" onchange="updateTariff()">
+          <option value="withDemandCharge">With Demand Charge</option>
+          <option value="noDemandCharge">No Demand Charge</option>
+        </select>
+      </div>
+
+      <!-- Product Selection -->
+      <div class="mb-4">
+        <label for="productSelect" class="form-label">Select Product:</label>
+        <select class="form-select" id="productSelect" onchange="updateProduct()">
+          <option value="waferCream">Wafer Cream</option>
+          <option value="waferStick">Wafer Stick</option>
+        </select>
+      </div>
+
+      <!-- Product Image -->
+      <div class="mb-4">
+        <img id="productImage" src="flow_diagram_wafercream.png" alt="Product Image" class="product-image" onload="console.log('Image loaded:', this.src)" onerror="console.error('Image failed to load:', this.src)">
+      </div>
+
+      <!-- Navigation Tabs -->
+      <ul class="nav nav-tabs mb-3" id="processTabs" role="tablist"></ul>
+
+      <!-- Tab Content -->
+      <div class="tab-content" id="processTabContent"></div>
+
+      <!-- Simulation Selection for Optimization -->
+      <div class="mb-4">
+        <label for="simulationSelect" class="form-label">Select Simulation:</label>
+        <select class="form-select" id="simulationSelect" onchange="handleSimulationSelect()">
+          <option value="">Select a simulation</option>
+        </select>
+      </div>
+      <div class="ga-params-form" id="gaParamsForm">
+        <h5 class="mb-3">Genetic Algorithm Parameters</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label for="populationSize">Population Size (min: 10)</label>
+            <input type="number" class="form-control" id="populationSize" min="10" placeholder="Default: 300" required>
+          </div>
+          <div class="col-md-4">
+            <label for="crossoverRate">Crossover Rate (0 to 1)</label>
+            <input type="number" class="form-control" id="crossoverRate" step="0.01" min="0" max="1" placeholder="Default: 0.8" required>
+          </div>
+          <div class="col-md-4">
+            <label for="mutationRate">Mutation Rate (0 to 1)</label>
+            <input type="number" class="form-control" id="mutationRate" step="0.01" min="0" max="1" placeholder="Default: 0.2" required>
+          </div>
+          <div class="col-md-4">
+            <label for="tournamentSize">Tournament Size (min: 2)</label>  
+            <input type="number" class="form-control" id="tournamentSize" min="2" placeholder="Default: 3" required>
+          </div>
+          <div class="col-md-4">
+            <label for="elitismRate">Elitism Rate (0 to 0.5)</label>
+            <input type="number" class="form-control" id="elitismRate" step="0.01" min="0" max="0.5" placeholder="Default: 0.05" required>
+          </div>
+        </div>
+        <button class="btn btn-save-ga" onclick="saveGaParameters()">Save GA Parameters</button>
+      </div>
+
+      <!-- Buttons -->
+      <div class="text-center mt-4">
+        <button class="btn btn-delete-data me-2" onclick="deleteSimulation()">Delete Data</button>
+        <button class="btn btn-simulate me-2" onclick="simulateLoad()">Save Data</button>
+        <button class="btn btn-optimize" onclick="runOptimization()">Run Optimization</button>
+      </div>
+    </div>
+
+    <!-- Result Section -->
+    <div class="result-section" id="result-section" style="display: none;">
+      <h3>Optimization Results</h3>
+
+      <!-- Visualization -->
+      <h4 class="mb-3">Visualization</h4>
+      <h5 class="mb-2">Load Profile and Schedule Comparison</h5>
+      <img id="resultsPlot" src="" alt="Optimization Results Plot">
+
+      <!-- Optimization Results Summary -->
+      <h4 class="mb-3 mt-4">Optimization Results Summary</h4>
+      <div class="optimization-summary">
+        <div class="summary-section">
+          <h5>Before Optimization</h5>
+          <table class="summary-table">
+            <tr><td>Peak Load:</td><td id="originalPeakLoad"></td></tr>
+            <tr><td>Total Energy:</td><td id="originalTotalEnergy"></td></tr>
+            <tr><td>Demand Cost:</td><td id="originalDemandCost"></td></tr>
+            <tr><td>Energy Cost:</td><td id="originalEnergyCost"></td></tr>
+            <tr><td>Total Cost:</td><td id="originalTotalCost"></td></tr>
+          </table>
+        </div>
+        
+        <div class="summary-section">
+          <h5>After Optimization</h5>
+          <table class="summary-table">
+            <tr><td>Peak Load:</td><td id="optimizedPeakLoad"></td></tr>
+            <tr><td>Total Energy:</td><td id="optimizedTotalEnergy"></td></tr>
+            <tr><td>Demand Cost:</td><td id="optimizedDemandCost"></td></tr>
+            <tr><td>Energy Cost:</td><td id="optimizedEnergyCost"></td></tr>
+            <tr><td>Total Cost:</td><td id="optimizedTotalCost"></td></tr>
+          </table>
+        </div>
+        
+        <div class="summary-section">
+          <h5>Savings</h5>
+          <table class="summary-table">
+            <tr><td>Peak Reduction:</td><td id="peakReduction"></td></tr>
+            <tr><td>Demand Cost Savings:</td><td id="demandCostSavings"></td></tr>
+            <tr><td>Energy Cost Savings:</td><td id="energyCostSavings"></td></tr>
+            <tr><td>Total Cost Savings:</td><td id="costSavings"></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Production Schedule -->
+      <h4 class="mt-4 mb-3">Production Schedule</h4>
+      <h5 class="mb-2">Optimized Schedule</h5>
+      <div id="optimizedSchedule"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>© 2025 Petra Christian University - Final Project</p>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="http://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let machineData = {
+      waferCream: {},
+      waferStick: {}
+    };
+    let machineCounts = {
+      waferCream: {},
+      waferStick: {}
+    };
+    let currentProduct = 'waferCream';
+    let currentTariff = 'withDemandCharge';
+    let currentSimulationId = null;
+
+    const stepNames = {
+      waferCream: [
+        'Batter Preparation',
+        'Baking',
+        'Cooling Sheet and Conditioning',
+        'Spreading and Stacking',
+        'Sandwich Cooling',
+        'Cutting',
+        'Enrobing',
+        'Packaging'
+      ],
+      waferStick: [
+        'Batter Preparation',
+        'Wafer Stick',
+        'Packaging'
+      ]
+    };
+
+    const productImages = {
+      'waferCream': 'flow_diagram_wafercream.png',
+      'waferStick': 'flow_diagram_waferstick.png'
+    };
+
+    function initializeTabs(product) {
+      const tabList = document.getElementById('processTabs');
+      const tabContent = document.getElementById('processTabContent');
+      tabList.innerHTML = '';
+      tabContent.innerHTML = '';
+      const processCount = product === 'waferCream' ? 8 : 3;
+
+      machineCounts[product] = machineCounts[product] || {};
+      for (let i = 1; i <= processCount; i++) {
+        if (!machineData[product][i]) {
+          machineData[product][i] = [{
+            name: '',
+            quantity: '',
+            power: '',
+            startTime: '',
+            endTime: '',
+            synced: false
+          }];
+        }
+
+        machineCounts[product][i] = machineData[product][i].length;
+
+        const tabId = `step-tab-${i}`;
+        const paneId = `step-${i}`;
+        const isActive = i === 1;
+        const stepName = stepNames[product][i - 1];
+
+        const tab = document.createElement('li');
+        tab.className = 'nav-item';
+        tab.setAttribute('role', 'presentation');
+        tab.innerHTML = `
+          <button class="nav-link ${isActive ? 'active' : ''}" id="${tabId}" data-bs-toggle="tab" data-bs-target="#${paneId}" type="button" role="tab" aria-controls="${paneId}" aria-selected="${isActive}">${stepName}</button>
+        `;
+        tabList.appendChild(tab);
+
+        const pane = document.createElement('div');
+        pane.className = `tab-pane fade ${isActive ? 'show active' : ''}`;
+        pane.id = paneId;
+        pane.setAttribute('role', 'tabpanel');
+        pane.setAttribute('aria-labelledby', tabId);
+
+        const machineList = document.createElement('div');
+        machineList.className = 'machine-list';
+        machineList.id = `machine-list-${i}`;
+
+        machineData[product][i].forEach((machine, index) => {
+          const machineIndex = index + 1;
+          const machineEntry = document.createElement('div');
+          machineEntry.className = 'machine-entry';
+          machineEntry.id = `machine-${i}-${machineIndex}`;
+          machineEntry.innerHTML = `
+            <div class="row g-3 align-items-end mt-3">
+              <div class="col-md-3">
+                <label for="machine-name-${i}-${machineIndex}" class="form-label">Machine Name</label>
+                <input type="text" class="form-control" id="machine-name-${i}-${machineIndex}" placeholder="e.g., Mixer" required value="${machine.name || ''}">
+              </div>
+              <div class="col-md-2">
+                <label for="quantity-${i}-${machineIndex}" class="form-label">Number of Machines</label>
+                <input type="number" class="form-control" id="quantity-${i}-${machineIndex}" placeholder="e.g., 1" min="1" required value="${machine.quantity || ''}">
+              </div>
+              <div class="col-md-2">
+                <label for="power-${i}-${machineIndex}" class="form-label">Power (kW)</label>
+                <input type="number" class="form-control" id="power-${i}-${machineIndex}" placeholder="e.g., 10.5" step="0.1" min="0" required value="${machine.power || ''}">
+              </div>
+              <div class="col-md-2">
+                <label class="operating-hours-label">Operating Hours</label>
+                <div class="time-inputs">
+                  <input type="time" class="form-control" id="start-time-${i}-${machineIndex}" required value="${machine.startTime || ''}">
+                  <span>to</span>
+                  <input type="time" class="form-control" id="end-time-${i}-${machineIndex}" required value="${machine.endTime || ''}">
+                </div>
+              </div>
+              <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-delete-machine" onclick="deleteMachineEntry(${i}, ${machineIndex})" style="${machineCounts[product][i] === 1 ? 'display: none;' : ''}">Delete</button>
+              </div>
+            </div>
+          `;
+          machineList.appendChild(machineEntry);
+
+          setTimeout(() => addInputListeners(i, machineIndex), 0);
+        });
+
+        pane.appendChild(machineList);
+        pane.innerHTML += `
+          <button class="btn btn-add-machine" onclick="addMachineEntry(${i})">Add Another Machine</button>
+        `;
+        tabContent.appendChild(pane);
+      }
+    }
+
+    function addMachineEntry(step) {
+      const product = currentProduct;
+      machineCounts[product][step]++;
+      const machineIndex = machineCounts[product][step];
+      const machineList = document.getElementById(`machine-list-${step}`);
+      const newEntry = document.createElement('div');
+      newEntry.className = 'machine-entry';
+      newEntry.id = `machine-${step}-${machineIndex}`;
+      newEntry.innerHTML = `
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label for="machine-name-${step}-${machineIndex}" class="form-label">Machine Name</label>
+            <input type="text" class="form-control" id="machine-name-${step}-${machineIndex}" placeholder="e.g., Mixer" required>
+          </div>
+          <div class="col-md-2">
+            <label for="quantity-${step}-${machineIndex}" class="form-label">Number of Machines</label>
+            <input type="number" class="form-control" id="quantity-${step}-${machineIndex}" placeholder="e.g., 1" min="1" required>
+          </div>
+          <div class="col-md-2">
+            <label for="power-${step}-${machineIndex}" class="form-label">Power (kW)</label>
+            <input type="number" class="form-control" id="power-${step}-${machineIndex}" placeholder="e.g., 10.5" step="0.1" min="0" required>
+          </div>
+          <div class="col-md-2">
+            <label class="operating-hours-label">Operating Hours</label>
+            <div class="time-inputs">
+              <input type="time" class="form-control" id="start-time-${step}-${machineIndex}" required>
+              <span>to</span>
+              <input type="time" class="form-control" id="end-time-${step}-${machineIndex}" required>
+            </div>
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-delete-machine" onclick="deleteMachineEntry(${step}, ${machineIndex})">Delete</button>
+          </div>
+        </div>
+      `;
+      machineList.appendChild(newEntry);
+
+      machineData[product][step].push({
+        name: '',
+        quantity: '',
+        power: '',
+        startTime: '',
+        endTime: ''
+      });
+
+      if (machineCounts[product][step] > 1) {
+        document.querySelectorAll(`#machine-list-${step} .btn-delete-machine`).forEach(btn => {
+          btn.style.display = 'block';
+        });
+      }
+
+      setTimeout(() => addInputListeners(step, machineIndex), 0);
+    }
+
+    function deleteMachineEntry(step, index) {
+      const product = currentProduct;
+      const entry = document.getElementById(`machine-${step}-${index}`);
+      if (entry) {
+        entry.remove();
+        machineCounts[product][step]--;
+        machineData[product][step].splice(index - 1, 1);
+
+        if (machineCounts[product][step] === 1) {
+          const firstDeleteButton = document.querySelector(`#machine-${step}-1 .btn-delete-machine`);
+          if (firstDeleteButton) {
+            firstDeleteButton.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    function addInputListeners(step, index) {
+      ['machine-name', 'quantity', 'power', 'start-time', 'end-time'].forEach(field => {
+        const input = document.getElementById(`${field}-${step}-${index}`);
+        if (input) {
+          input.addEventListener('input', () => {
+            updateData(step, index);
+          });
+        }
+      });
+    }
+
+    function updateData(step, index) {
+      const product = currentProduct;
+      const machine = {
+        name: document.getElementById(`machine-name-${step}-${index}`).value,
+        quantity: document.getElementById(`quantity-${step}-${index}`).value,
+        power: document.getElementById(`power-${step}-${index}`).value,
+        startTime: document.getElementById(`start-time-${step}-${index}`).value,
+        endTime: document.getElementById(`end-time-${step}-${index}`).value
+      };
+
+      if (machine.name || machine.quantity || machine.power || machine.startTime || machine.endTime) {
+        machineData[product][step][index - 1] = machine;
+      }
+    }
+
+    function updateProduct() {
+      currentProduct = document.getElementById('productSelect').value;
+      const imageUrl = productImages[currentProduct];
+      const productImage = document.getElementById('productImage');
+      productImage.src = imageUrl;
+      productImage.alt = currentProduct === 'waferCream' ? 'Wafer Cream' : 'Wafer Stick';
+      console.log('Setting image to:', imageUrl); // Debugging log
+      initializeTabs(currentProduct);
+    }
+
+    function updateTariff() {
+      currentTariff = document.getElementById('tariffSelect').value;
+      console.log('Tariff updated to:', currentTariff);
+    }
+
+    function fetchSimulations() {
+      console.log('Fetching simulations...');
+      fetch('http://203.189.121.130:5000/api/simulations')
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        })
+        .then(simulations => {
+          const select = document.getElementById('simulationSelect');
+          select.innerHTML = '<option value="">Select a simulation</option>';
+          simulations.forEach(sim => {
+            const option = document.createElement('option');
+            option.value = sim.simulation_id;
+            option.textContent = `Simulation ${sim.simulation_id} - ${sim.tariff_type}`;
+            select.appendChild(option);
+          });
+          console.log('Simulations loaded:', simulations);
+        })
+        .catch(error => {
+          console.error('Error fetching simulations:', error);
+          alert('Failed to load simulations: ' + error.message);
+        });
+    }
+
+    function simulateLoad() {
+      currentTariff = document.getElementById('tariffSelect').value;
+      console.log('Simulate load with tariff:', currentTariff);
+
+      function getProcesses(productKey) {
+        const processCount = productKey === 'waferCream' ? 8 : 3;
+        const processes = [];
+        for (let i = 1; i <= processCount; i++) {
+          const machines = machineData[productKey][i]
+            .map((machine, index) => ({
+              machine_name: machine.name,
+              quantity: parseInt(machine.quantity),
+              power: parseFloat(machine.power),
+              start_time: machine.startTime ? machine.startTime + ':00' : '',
+              stop_time: machine.endTime ? machine.endTime + ':00' : ''
+            }))
+            .filter(machine => machine.machine_name && machine.quantity > 0 && machine.power >= 0 && machine.start_time && machine.stop_time);
+
+          if (machines.length > 0) {
+            processes.push({
+              process_name: stepNames[productKey][i - 1],
+              machines
+            });
+          }
+        }
+        return processes;
+      }
+
+      const waferCreamData = {
+        product: 'Wafer Cream',
+        processes: getProcesses('waferCream').filter(p => p.machines.length > 0)
+      };
+      const waferStickData = {
+        product: 'Wafer Stick',
+        processes: getProcesses('waferStick').filter(p => p.machines.length > 0)
+      };
+
+      const products = [];
+      if (waferCreamData.processes.length > 0) products.push(waferCreamData);
+      if (waferStickData.processes.length > 0) products.push(waferStickData);
+
+      if (products.length === 0) {
+        alert('Please add at least one valid process with machines.');
+        return;
+      }
+
+      const payload = {
+        products,
+        tariff: currentTariff === 'withDemandCharge' ? 'With Demand Charge' : 'No Demand Charge'
+      };
+      console.log('Sending payload to /api/insert_data:', JSON.stringify(payload));
+
+      fetch('http://203.189.121.130:5000/api/insert_data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          if (data.message) {
+            currentSimulationId = data.simulation_id;
+            alert(data.message);
+            fetchSimulations();
+          } else {
+            alert('Error: ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error saving data:', error);
+          alert('An error occurred while saving data: ' + error.message);
+        });
+    }
+
+    function renderOptimizedSchedule(scheduleList) {
+      const optimizedScheduleDiv = document.getElementById('optimizedSchedule');
+      optimizedScheduleDiv.innerHTML = scheduleList.map(process => `
+        <div class="schedule-item">
+          <h4>${process.process_name}</h4>
+          <p><strong>Machines:</strong></p>
+          <ul class="machine-list-schedule">
+            ${process.machines.map(machine => `
+              <li>
+                ${machine.machine_name}
+                (Qty: ${machine.quantity}, Power: ${machine.power} kW) <br>
+                <strong>Start:</strong> ${machine.start_time},
+                <strong>End:</strong> ${machine.end_time}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `).join('');
+    }
+
+    function setLoading(isLoading) {
+      const btn = document.querySelector('.btn-optimize');
+      if (btn) {
+        btn.disabled = isLoading;
+        btn.textContent = isLoading ? 'Optimizing...' : 'Run Optimization';
+      }
+    }
+
+    async function runOptimization() {
+      currentTariff = document.getElementById('tariffSelect').value;
+      console.log('Run optimization with tariff:', currentTariff);
+
+      setLoading(true);
+
+      try {
+        const simulationId = document.getElementById('simulationSelect').value;
+        const tariffType = currentTariff === 'withDemandCharge' ? 'With Demand Charge' : 'No Demand Charge';
+
+        if (!simulationId) {
+          alert('Please select a simulation.');
+          setLoading(false);
+          return;
+        }
+
+        const payload = { simulation_id: parseInt(simulationId), tariff_type: tariffType };
+        console.log('Sending payload to /api/run_optimization:', JSON.stringify(payload));
+
+        const response = await fetch('http://203.189.121.130:5000/api/run_optimization', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert(errorData.error || 'Server error during optimization.');
+          setLoading(false);
+          return;
+        }
+
+        const result = await response.json();
+        if (result.error) {
+          alert(result.error);
+          setLoading(false);
+          return;
+        }
+
+        document.getElementById('originalPeakLoad').textContent = `${result.summary.original_peak_load} kW`;
+        document.getElementById('optimizedPeakLoad').textContent = `${result.summary.optimized_peak_load} kW`;
+        document.getElementById('peakReduction').textContent = `${result.summary.peak_reduction} kW (${result.summary.peak_reduction_percent}%)`;
+        document.getElementById('originalTotalEnergy').textContent = `${result.summary.original_total_energy} kWh`;
+        document.getElementById('optimizedTotalEnergy').textContent = `${result.summary.optimized_total_energy} kWh`;
+        document.getElementById('originalDemandCost').textContent = `$${result.summary.original_demand_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedDemandCost').textContent = `$${result.summary.optimized_demand_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('demandCostSavings').textContent = `$${result.summary.demand_cost_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.demand_cost_savings_percent}%)`;
+        document.getElementById('originalEnergyCost').textContent = `$${result.summary.original_energy_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedEnergyCost').textContent = `$${result.summary.optimized_energy_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('energyCostSavings').textContent = `$${result.summary.energy_cost_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.energy_cost_savings_percent}%)`;
+        document.getElementById('originalTotalCost').textContent = `$${result.summary.original_total_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedTotalCost').textContent = `$${result.summary.optimized_total_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('costSavings').textContent = `$${result.summary.cost_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        renderOptimizedSchedule(result.schedule.optimized_schedule);
+
+        document.getElementById('resultsPlot').src = result.visualization.results_plot;
+
+        document.getElementById('result-section').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error during optimization:', error);
+        alert('An error occurred during optimization: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function deleteSimulation() {
+      const simulationId = document.getElementById('simulationSelect').value;
+      if (!simulationId) {
+        alert('Please select a simulation to delete.');
+        return;
+      }
+
+      if (!confirm('Are you sure you want to delete this simulation?')) {
+        return;
+      }
+
+      fetch(`http://203.189.121.130:5000/api/delete_data`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ simulation_id: parseInt(simulationId) })
+      })
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          if (data.message) {
+            alert(data.message);
+            fetchSimulations();
+            document.getElementById('result-section').style.display = 'none';
+          } else {
+            alert('Error: ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to delete simulation:', error);
+          alert('An error occurred while deleting simulation: ' + error.message);
+        });
+    }
+
+    function handleSimulationSelect() {
+      const simulationId = document.getElementById('simulationSelect').value;
+      const gaParamsForm = document.getElementById('gaParamsForm');
+      const runOptimizationBtn = document.querySelector('.btn-optimize');
+      
+      if (simulationId) {
+        gaParamsForm.style.display = 'block';
+        runOptimizationBtn.disabled = true;
+        fetchGaParameters(simulationId);
+      } else {
+        gaParamsForm.style.display = 'none';
+        resetGaParamsForm();
+        runOptimizationBtn.disabled = true;
+      }
+    }
+
+    function fetchGaParameters(simulationId) {
+      fetch(`http://203.189.121.130:5000/api/ga_parameters/${simulationId}`)
+        .then(response => {
+          if (!response.ok && response.status !== 404) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.status === 404 ? {} : response.json();
+        })
+        .then(data => {
+          document.getElementById('populationSize').value = data.population_size || '';
+          document.getElementById('crossoverRate').value = data.crossover_rate || '';
+          document.getElementById('mutationRate').value = data.mutation_rate || '';
+          document.getElementById('tournamentSize').value = data.tournament_size || '';
+          document.getElementById('elitismRate').value = data.elitism_rate || '';
+        })
+        .catch(error => {
+          console.error('Error fetching GA parameters:', error);
+          alert('Failed to load GA parameters: ' + error.message);
+        });
+    }
+
+    function resetGaParamsForm() {
+      document.getElementById('populationSize').value = '';
+      document.getElementById('crossoverRate').value = '';
+      document.getElementById('mutationRate').value = '';
+      document.getElementById('tournamentSize').value = '';
+      document.getElementById('elitismRate').value = '';
+    }
+
+    function saveGaParameters() {
+      const simulationId = document.getElementById('simulationSelect').value;
+      if (!simulationId) {
+        alert('Please select a simulation first.');
+        return;
+      }
+
+      const gaParameters = {
+        simulation_id: parseInt(simulationId),
+        population_size: parseInt(document.getElementById('populationSize').value),
+        crossover_rate: parseFloat(document.getElementById('crossoverRate').value),
+        mutation_rate: parseFloat(document.getElementById('mutationRate').value),
+        tournament_size: parseInt(document.getElementById('tournamentSize').value),
+        elitism_rate: parseFloat(document.getElementById('elitismRate').value)
+      };
+
+      if (!validateGaParameters(gaParameters)) {
+        return;
+      }
+
+      fetch('http://203.189.121.130:5000/api/save_ga_parameters', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gaParameters)
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            alert(data.message);
+            document.querySelector('.btn-optimize').disabled = false;
+          } else {
+            alert('Error: ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error saving GA parameters:', error);
+          alert('An error occurred while saving GA parameters: ' + error.message);
+        });
+    }
+
+    function validateGaParameters(params) {
+      if (!params.population_size || params.population_size < 10) {
+        alert('Population Size must be at least 10.');
+        return false;
+      }
+      if (!params.crossover_rate || params.crossover_rate < 0 || params.crossover_rate > 1) {
+        alert('Crossover Rate must be between 0 and 1.');
+        return false;
+      }
+      if (!params.mutation_rate || params.mutation_rate < 0 || params.mutation_rate > 1) {
+        alert('Mutation Rate must be between 0 and 1.');
+        return false;
+      }
+      if (!params.tournament_size || params.tournament_size < 2) {
+        alert('Tournament Size must be at least 2.');
+        return false;
+      }
+      if (!params.elitism_rate || params.elitism_rate < 0 || params.elitism_rate > 0.5) {
+        alert('Elitism Rate must be between 0 and 0.5.');
+        return false;
+      }
+      return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeTabs('waferCream');
+      fetchSimulations();
+      currentTariff = document.getElementById('tariffSelect').value;
+      console.log('Initial tariff:', currentTariff);
+      handleSimulationSelect();
+    });
+  </script>
+</body>
+</html>
