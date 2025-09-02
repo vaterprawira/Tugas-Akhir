@@ -78,8 +78,8 @@
       width: 100%;
       height: auto;
       max-width: 100%;
-      max-height: 400px; /* Ukuran maksimum agar tidak terlalu besar */
-      object-fit: contain; /* Memastikan gambar menyesuaikan tanpa distorsi */
+      max-height: 400px; /* Maximum size to prevent being too large */
+      object-fit: contain; /* Ensures the image scales without distortion */
       margin-bottom: 1rem;
     }
     .btn-add-machine {
@@ -143,6 +143,18 @@
     .summary-table td:first-child {
       font-weight: bold;
       width: 50%;
+    }
+    .summary-subsection {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #eee; /* Separator for subsections */
+    }
+    .summary-subsection h6 {
+      color: #6c757d;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      text-align: left;
     }
     .schedule-item {
       margin-bottom: 1rem;
@@ -254,6 +266,32 @@
     .btn-save-ga:hover {
       background-color: #138496;
     }
+    /* New styles for schedule comparison */
+    .schedule-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* Two columns for schedules */
+      gap: 2rem; /* Space between columns */
+      margin-top: 2rem;
+    }
+    .schedule-column {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 1.5rem;
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .schedule-column h5 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 1.5rem;
+      font-weight: bold;
+    }
+    @media (max-width: 768px) {
+      .schedule-comparison {
+        grid-template-columns: 1fr; /* Stack columns on small screens */
+        gap: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -296,6 +334,32 @@
           <option value="withDemandCharge">With Demand Charge</option>
           <option value="noDemandCharge">No Demand Charge</option>
         </select>
+      </div>
+
+      <!-- Tariff Inputs (Dynamic) -->
+      <div id="tariffInputs" class="mb-4">
+        <h5 class="mb-3">Custom Tariff Details</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="offPeakRate" class="form-label">Off-Peak Rate ($/kWh)</label>
+            <input type="number" class="form-control" id="offPeakRate" step="0.001" min="0" placeholder="e.g., 0.064" required>
+          </div>
+          <div class="col-md-6">
+            <label for="onPeakRate" class="form-label">On-Peak Rate ($/kWh)</label>
+            <input type="number" class="form-control" id="onPeakRate" step="0.001" min="0" placeholder="e.g., 0.0896" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Peak Period</label>
+            <div class="time-inputs">
+              <input type="time" class="form-control" id="peakPeriodStartHour" required>
+              <input type="time" class="form-control" id="peakPeriodEndHour" required>
+            </div>
+          </div>
+          <div class="col-md-12" id="demandChargeInputGroup">
+            <label for="demandChargeInput" class="form-label">Demand Charge ($/kW)</label>
+            <input type="number" class="form-control" id="demandChargeInput" step="0.01" min="0" required>
+          </div>
+        </div>
       </div>
 
       <!-- Product Selection -->
@@ -341,7 +405,7 @@
             <input type="number" class="form-control" id="mutationRate" step="0.01" min="0" max="1" placeholder="Default: 0.2" required>
           </div>
           <div class="col-md-4">
-            <label for="tournamentSize">Tournament Size (min: 2)</label>  
+            <label for="tournamentSize">Tournament Size (min: 2)</label> 
             <input type="number" class="form-control" id="tournamentSize" min="2" placeholder="Default: 3" required>
           </div>
           <div class="col-md-4">
@@ -362,53 +426,101 @@
 
     <!-- Result Section -->
     <div class="result-section" id="result-section" style="display: none;">
-      <h3>Optimization Results</h3>
+      <h3>Optimisation Results</h3>
 
       <!-- Visualization -->
-      <h4 class="mb-3">Visualization</h4>
-      <h5 class="mb-2">Load Profile and Schedule Comparison</h5>
+      <h4 class="mb-3">Load Profile Results</h4>
       <img id="resultsPlot" src="" alt="Optimization Results Plot">
 
       <!-- Optimization Results Summary -->
-      <h4 class="mb-3 mt-4">Optimization Results Summary</h4>
+      <h4 class="mb-3 mt-4">Optimisation Results Summary</h4>
       <div class="optimization-summary">
         <div class="summary-section">
-          <h5>Before Optimization</h5>
+          <h5>Before Optimisation</h5>
           <table class="summary-table">
-            <tr><td>Peak Load:</td><td id="originalPeakLoad"></td></tr>
-            <tr><td>Total Energy:</td><td id="originalTotalEnergy"></td></tr>
-            <tr><td>Demand Cost:</td><td id="originalDemandCost"></td></tr>
-            <tr><td>Energy Cost:</td><td id="originalEnergyCost"></td></tr>
-            <tr><td>Total Cost:</td><td id="originalTotalCost"></td></tr>
+            <tr><td>Peak Load:</td><td id="originalPeakLoad"></td></tr> <!-- Peak Load is standalone -->
           </table>
+          <div class="summary-subsection">
+            <h6>Daily Metrics</h6>
+            <table class="summary-table">
+              <tr><td>Total Energy:</td><td id="originalTotalDailyEnergy"></td></tr>
+              <tr><td>Demand Cost:</td><td id="originalDemandCostDaily"></td></tr>
+              <tr><td>Energy Cost:</td><td id="originalEnergyCostDaily"></td></tr>
+              <tr><td>Total Cost:</td><td id="originalTotalCostDaily"></td></tr>
+            </table>
+          </div>
+          <div class="summary-subsection">
+            <h6>Monthly Metrics</h6>
+            <table class="summary-table">
+              <tr><td>Total Energy:</td><td id="originalTotalMonthlyEnergy"></td></tr>
+              <tr><td>Demand Cost:</td><td id="originalDemandCostMonthly"></td></tr>
+              <tr><td>Energy Cost:</td><td id="originalEnergyCostMonthly"></td></tr>
+              <tr><td>Total Cost:</td><td id="originalTotalCostMonthly"></td></tr>
+            </table>
+          </div>
         </div>
         
         <div class="summary-section">
-          <h5>After Optimization</h5>
+          <h5>After Optimisation</h5>
           <table class="summary-table">
-            <tr><td>Peak Load:</td><td id="optimizedPeakLoad"></td></tr>
-            <tr><td>Total Energy:</td><td id="optimizedTotalEnergy"></td></tr>
-            <tr><td>Demand Cost:</td><td id="optimizedDemandCost"></td></tr>
-            <tr><td>Energy Cost:</td><td id="optimizedEnergyCost"></td></tr>
-            <tr><td>Total Cost:</td><td id="optimizedTotalCost"></td></tr>
+            <tr><td>Peak Load:</td><td id="optimizedPeakLoad"></td></tr> <!-- Peak Load is standalone -->
           </table>
+          <div class="summary-subsection">
+            <h6>Daily Metrics</h6>
+            <table class="summary-table">
+              <tr><td>Total Energy:</td><td id="optimizedTotalDailyEnergy"></td></tr>
+              <tr><td>Demand Cost:</td><td id="optimizedDemandCostDaily"></td></tr>
+              <tr><td>Energy Cost:</td><td id="optimizedEnergyCostDaily"></td></tr>
+              <tr><td>Total Cost:</td><td id="optimizedTotalCostDaily"></td></tr>
+            </table>
+          </div>
+          <div class="summary-subsection">
+            <h6>Monthly Metrics</h6>
+            <table class="summary-table">
+              <tr><td>Total Energy:</td><td id="optimizedTotalMonthlyEnergy"></td></tr>
+              <tr><td>Demand Cost:</td><td id="optimizedDemandCostMonthly"></td></tr>
+              <tr><td>Energy Cost:</td><td id="optimizedEnergyCostMonthly"></td></tr>
+              <tr><td>Total Cost:</td><td id="optimizedTotalCostMonthly"></td></tr>
+            </table>
+          </div>
         </div>
         
         <div class="summary-section">
           <h5>Savings</h5>
           <table class="summary-table">
             <tr><td>Peak Reduction:</td><td id="peakReduction"></td></tr>
-            <tr><td>Demand Cost Savings:</td><td id="demandCostSavings"></td></tr>
-            <tr><td>Energy Cost Savings:</td><td id="energyCostSavings"></td></tr>
-            <tr><td>Total Cost Savings:</td><td id="costSavings"></td></tr>
           </table>
+          <div class="summary-subsection">
+            <h6>Daily Savings</h6>
+            <table class="summary-table">
+              <tr><td>Demand Cost:</td><td id="demandCostDailySavings"></td></tr>
+              <tr><td>Energy Cost:</td><td id="energyCostDailySavings"></td></tr>
+              <tr><td>Total Cost:</td><td id="totalCostDailySavings"></td></tr>
+            </table>
+          </div>
+          <div class="summary-subsection">
+            <h6>Monthly Savings</h6>
+            <table class="summary-table">
+              <tr><td>Demand Cost:</td><td id="demandCostMonthlySavings"></td></tr>
+              <tr><td>Energy Cost:</td><td id="energyCostMonthlySavings"></td></tr>
+              <tr><td>Total Cost:</td><td id="totalCostMonthlySavings"></td></tr>
+            </table>
+          </div>
         </div>
       </div>
 
       <!-- Production Schedule -->
       <h4 class="mt-4 mb-3">Production Schedule</h4>
-      <h5 class="mb-2">Optimized Schedule</h5>
-      <div id="optimizedSchedule"></div>
+      <div class="schedule-comparison">
+        <div class="schedule-column">
+          <h5>Before Optimisation</h5>
+          <div id="originalSchedule"></div>
+        </div>
+        <div class="schedule-column">
+          <h5>After Optimisation</h5>
+          <div id="optimizedSchedule"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -433,7 +545,8 @@
     let currentSimulationId = null;
 
     const stepNames = {
-      waferCream: [
+      // Keys are camelCase to match the product selection values directly
+      waferCream: [ 
         'Batter Preparation',
         'Baking',
         'Cooling Sheet and Conditioning',
@@ -464,14 +577,14 @@
 
       machineCounts[product] = machineCounts[product] || {};
       for (let i = 1; i <= processCount; i++) {
-        if (!machineData[product][i]) {
+        // Ensure machineData[product][i] exists and has at least one empty machine if not present
+        if (!machineData[product][i] || machineData[product][i].length === 0) {
           machineData[product][i] = [{
             name: '',
             quantity: '',
             power: '',
             startTime: '',
-            endTime: '',
-            synced: false
+            endTime: ''
           }];
         }
 
@@ -513,17 +626,16 @@
               </div>
               <div class="col-md-2">
                 <label for="quantity-${i}-${machineIndex}" class="form-label">Number of Machines</label>
-                <input type="number" class="form-control" id="quantity-${i}-${machineIndex}" placeholder="e.g., 1" min="1" required value="${machine.quantity || ''}">
+                <input type="number" class="form-control" id="quantity-${i}-${machineIndex}" placeholder="e.g., 5" min="1" required value="${machine.quantity || ''}">
               </div>
               <div class="col-md-2">
                 <label for="power-${i}-${machineIndex}" class="form-label">Power (kW)</label>
-                <input type="number" class="form-control" id="power-${i}-${machineIndex}" placeholder="e.g., 10.5" step="0.1" min="0" required value="${machine.power || ''}">
+                <input type="number" class="form-control" id="power-${i}-${machineIndex}" placeholder="e.g., 2.2" step="0.1" min="0" required value="${machine.power || ''}">
               </div>
               <div class="col-md-2">
                 <label class="operating-hours-label">Operating Hours</label>
                 <div class="time-inputs">
                   <input type="time" class="form-control" id="start-time-${i}-${machineIndex}" required value="${machine.startTime || ''}">
-                  <span>to</span>
                   <input type="time" class="form-control" id="end-time-${i}-${machineIndex}" required value="${machine.endTime || ''}">
                 </div>
               </div>
@@ -561,17 +673,16 @@
           </div>
           <div class="col-md-2">
             <label for="quantity-${step}-${machineIndex}" class="form-label">Number of Machines</label>
-            <input type="number" class="form-control" id="quantity-${step}-${machineIndex}" placeholder="e.g., 1" min="1" required>
+            <input type="number" class="form-control" id="quantity-${step}-${machineIndex}" placeholder="e.g., 5" min="1" required>
           </div>
           <div class="col-md-2">
             <label for="power-${step}-${machineIndex}" class="form-label">Power (kW)</label>
-            <input type="number" class="form-control" id="power-${step}-${machineIndex}" placeholder="e.g., 10.5" step="0.1" min="0" required>
+            <input type="number" class="form-control" id="power-${step}-${machineIndex}" placeholder="e.g., 2.2" step="0.1" min="0" required>
           </div>
           <div class="col-md-2">
             <label class="operating-hours-label">Operating Hours</label>
             <div class="time-inputs">
               <input type="time" class="form-control" id="start-time-${step}-${machineIndex}" required>
-              <span>to</span>
               <input type="time" class="form-control" id="end-time-${step}-${machineIndex}" required>
             </div>
           </div>
@@ -590,6 +701,7 @@
         endTime: ''
       });
 
+      // Show all delete buttons if there's more than one machine entry for this step
       if (machineCounts[product][step] > 1) {
         document.querySelectorAll(`#machine-list-${step} .btn-delete-machine`).forEach(btn => {
           btn.style.display = 'block';
@@ -605,10 +717,15 @@
       if (entry) {
         entry.remove();
         machineCounts[product][step]--;
+        // Remove the machine data from the array
         machineData[product][step].splice(index - 1, 1);
 
+        // Re-index remaining machines visually and in data if necessary (optional but good practice)
+        // For simplicity, we just update the counts and hide/show delete button for the first item
+        
+        // If only one machine remains, hide its delete button
         if (machineCounts[product][step] === 1) {
-          const firstDeleteButton = document.querySelector(`#machine-${step}-1 .btn-delete-machine`);
+          const firstDeleteButton = document.querySelector(`#machine-list-${step} .btn-delete-machine`);
           if (firstDeleteButton) {
             firstDeleteButton.style.display = 'none';
           }
@@ -637,8 +754,11 @@
         endTime: document.getElementById(`end-time-${step}-${index}`).value
       };
 
-      if (machine.name || machine.quantity || machine.power || machine.startTime || machine.endTime) {
+      // Only update if the machineData for this step and index exists (it should, due to push in addMachineEntry)
+      if (machineData[product][step][index - 1]) {
         machineData[product][step][index - 1] = machine;
+      } else {
+        console.warn(`Attempted to update non-existent machineData at step ${step}, index ${index}`);
       }
     }
 
@@ -655,7 +775,25 @@
     function updateTariff() {
       currentTariff = document.getElementById('tariffSelect').value;
       console.log('Tariff updated to:', currentTariff);
+      toggleDemandChargeInput(); // Call this function to update visibility
     }
+
+    function toggleDemandChargeInput() {
+      const tariffSelect = document.getElementById('tariffSelect');
+      const demandChargeInputGroup = document.getElementById('demandChargeInputGroup');
+      const demandChargeInput = document.getElementById('demandChargeInput');
+
+      if (tariffSelect.value === 'withDemandCharge') {
+        demandChargeInputGroup.style.display = 'block';
+        demandChargeInput.setAttribute('required', 'true');
+        demandChargeInput.placeholder = 'e.g., 10.00'; 
+      } else {
+        demandChargeInputGroup.style.display = 'none';
+        demandChargeInput.removeAttribute('required');
+        demandChargeInput.value = '0'; 
+      }
+    }
+
 
     function fetchSimulations() {
       console.log('Fetching simulations...');
@@ -667,23 +805,33 @@
         .then(simulations => {
           const select = document.getElementById('simulationSelect');
           select.innerHTML = '<option value="">Select a simulation</option>';
+          // Sort simulations by created_at in descending order (assuming it's available)
+          simulations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
           simulations.forEach(sim => {
             const option = document.createElement('option');
             option.value = sim.simulation_id;
-            option.textContent = `Simulation ${sim.simulation_id} - ${sim.tariff_type}`;
+            const date = new Date(sim.created_at).toLocaleString();
+            option.textContent = `Simulation ${sim.simulation_id}: ${sim.tariff_type}`;
             select.appendChild(option);
           });
           console.log('Simulations loaded:', simulations);
         })
         .catch(error => {
           console.error('Error fetching simulations:', error);
-          alert('Failed to load simulations: ' + error.message);
+          // Use a custom alert message instead of browser's default
+          displayCustomAlert('Failed to load simulations: ' + error.message, 'danger');
         });
     }
 
     function simulateLoad() {
       currentTariff = document.getElementById('tariffSelect').value;
       console.log('Simulate load with tariff:', currentTariff);
+
+      // Validate tariff inputs before proceeding
+      if (!validateTariffInputs()) {
+          return; // Stop if validation fails
+      }
 
       function getProcesses(productKey) {
         const processCount = productKey === 'waferCream' ? 8 : 3;
@@ -694,14 +842,22 @@
               machine_name: machine.name,
               quantity: parseInt(machine.quantity),
               power: parseFloat(machine.power),
+              // Ensure time formats are 'HH:MM:SS' for backend
               start_time: machine.startTime ? machine.startTime + ':00' : '',
               stop_time: machine.endTime ? machine.endTime + ':00' : ''
             }))
-            .filter(machine => machine.machine_name && machine.quantity > 0 && machine.power >= 0 && machine.start_time && machine.stop_time);
+            // Filter out incomplete or invalid machine entries
+            .filter(machine => 
+                machine.machine_name && machine.machine_name.trim() !== '' &&
+                !isNaN(machine.quantity) && machine.quantity > 0 && 
+                !isNaN(machine.power) && machine.power >= 0 && 
+                machine.start_time && machine.start_time.trim() !== '' &&
+                machine.stop_time && machine.stop_time.trim() !== ''
+            );
 
           if (machines.length > 0) {
             processes.push({
-              process_name: stepNames[productKey][i - 1],
+              process_name: stepNames[productKey][i - 1], // Use the correct step name
               machines
             });
           }
@@ -709,29 +865,41 @@
         return processes;
       }
 
-      const waferCreamData = {
-        product: 'Wafer Cream',
-        processes: getProcesses('waferCream').filter(p => p.machines.length > 0)
-      };
-      const waferStickData = {
-        product: 'Wafer Stick',
-        processes: getProcesses('waferStick').filter(p => p.machines.length > 0)
-      };
+      const waferCreamProcesses = getProcesses('waferCream');
+      const waferStickProcesses = getProcesses('waferStick');
 
       const products = [];
-      if (waferCreamData.processes.length > 0) products.push(waferCreamData);
-      if (waferStickData.processes.length > 0) products.push(waferStickData);
+      if (waferCreamProcesses.length > 0) {
+          products.push({ product: 'Wafer Cream', processes: waferCreamProcesses });
+      }
+      if (waferStickProcesses.length > 0) {
+          products.push({ product: 'Wafer Stick', processes: waferStickProcesses });
+      }
 
       if (products.length === 0) {
-        alert('Please add at least one valid process with machines.');
+        displayCustomAlert('Please add at least one valid process with machines for Wafer Cream or Wafer Stick.', 'warning');
         return;
       }
 
+      // Collect custom tariff details
+      const tariffParams = {
+          offPeakRate: document.getElementById('offPeakRate').value,
+          onPeakRate: document.getElementById('onPeakRate').value,
+          peakPeriodStartHour: document.getElementById('peakPeriodStartHour').value, // HH:MM string
+          peakPeriodEndHour: document.getElementById('peakPeriodEndHour').value,     // HH:MM string
+          demandChargeInput: document.getElementById('demandChargeInput').value 
+      };
+
+
       const payload = {
         products,
-        tariff: currentTariff === 'withDemandCharge' ? 'With Demand Charge' : 'No Demand Charge'
+        tariff: currentTariff === 'withDemandCharge' ? 'With Demand Charge' : 'No Demand Charge',
+        tariff_params: tariffParams // Include custom tariff details in payload
       };
       console.log('Sending payload to /api/insert_data:', JSON.stringify(payload));
+
+      // Disable buttons during API call
+      setLoadingButtons(true);
 
       fetch('http://203.189.121.130:5000/api/insert_data', {
         method: 'POST',
@@ -741,27 +909,72 @@
         body: JSON.stringify(payload)
       })
         .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          if (!response.ok) {
+            // Attempt to parse error message from backend
+            return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`); });
+          }
           return response.json();
         })
         .then(data => {
           if (data.message) {
             currentSimulationId = data.simulation_id;
-            alert(data.message);
-            fetchSimulations();
+            displayCustomAlert(data.message, 'success');
+            fetchSimulations(); // Refresh simulation list
+            // Automatically select the newly created simulation
+            document.getElementById('simulationSelect').value = currentSimulationId;
+            handleSimulationSelect(); // Trigger GA params form display
           } else {
-            alert('Error: ' + data.error);
+            displayCustomAlert('Error: ' + (data.error || 'Unknown error'), 'danger');
           }
         })
         .catch(error => {
           console.error('Error saving data:', error);
-          alert('An error occurred while saving data: ' + error.message);
+          displayCustomAlert('An error occurred while saving data: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            setLoadingButtons(false); // Re-enable buttons
         });
     }
 
-    function renderOptimizedSchedule(scheduleList) {
-      const optimizedScheduleDiv = document.getElementById('optimizedSchedule');
-      optimizedScheduleDiv.innerHTML = scheduleList.map(process => `
+    // New function to render a generic schedule list (used for both original and optimized)
+    function renderScheduleList(elementId, scheduleList) {
+      const scheduleDiv = document.getElementById(elementId);
+      if (!scheduleDiv) return; // Exit if element not found
+
+      // Helper function to convert "Wafer Cream" to "waferCream"
+      function toCamelCaseKey(str) {
+        return str.split(' ').map((word, index) => {
+          if (index === 0) return word.toLowerCase();
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        }).join('');
+      }
+
+      // Sort the scheduleList by process name based on stepNames order for consistent display
+      const sortedScheduleList = [...scheduleList].sort((a, b) => {
+        const productA_raw = a.process_name.split(' - ')[0]; // e.g., "Wafer Cream"
+        const stepA = a.process_name.split(' - ')[1];       // e.g., "Batter Preparation"
+        const productB_raw = b.process_name.split(' - ')[0]; // e.g., "Wafer Stick"
+        const stepB = b.process_name.split(' - ')[1];       // e.g., "Wafer Stick"
+
+        // Correctly get the camelCase key for product names
+        const productA_key = toCamelCaseKey(productA_raw); 
+        const productB_key = toCamelCaseKey(productB_raw);
+
+        // Safely get the order lists from stepNames using the correct camelCase keys
+        const orderListA = stepNames[productA_key];
+        const orderListB = stepNames[productB_key];
+
+        // Safely get the index, defaulting to a large number if not found or list is null/undefined
+        const orderA = orderListA ? orderListA.indexOf(stepA) : 9999;
+        const orderB = orderListB ? orderListB.indexOf(stepB) : 9999;
+
+        if (productA_key === productB_key) {
+            return orderA - orderB;
+        }
+        return productA_key.localeCompare(productB_key); // Sort by product name if different
+      });
+
+      scheduleDiv.innerHTML = sortedScheduleList.map(process => `
         <div class="schedule-item">
           <h4>${process.process_name}</h4>
           <p><strong>Machines:</strong></p>
@@ -779,31 +992,66 @@
       `).join('');
     }
 
-    function setLoading(isLoading) {
-      const btn = document.querySelector('.btn-optimize');
-      if (btn) {
-        btn.disabled = isLoading;
-        btn.textContent = isLoading ? 'Optimizing...' : 'Run Optimization';
+
+    function setLoadingButtons(isLoading) {
+      const saveBtn = document.querySelector('.btn-simulate');
+      const optimizeBtn = document.querySelector('.btn-optimize');
+      const deleteBtn = document.querySelector('.btn-delete-data');
+      const saveGaBtn = document.querySelector('.btn-save-ga');
+
+      if (saveBtn) {
+        saveBtn.disabled = isLoading;
+        saveBtn.textContent = isLoading ? 'Saving...' : 'Save Data';
       }
+      if (optimizeBtn) {
+        optimizeBtn.disabled = isLoading;
+        optimizeBtn.textContent = isLoading ? 'Optimizing...' : 'Run Optimization';
+      }
+      if (deleteBtn) {
+        deleteBtn.disabled = isLoading;
+      }
+      if (saveGaBtn) {
+        saveGaBtn.disabled = isLoading;
+      }
+      // Also disable inputs during loading, if desired, but not strictly necessary for this logic
     }
 
     async function runOptimization() {
-      currentTariff = document.getElementById('tariffSelect').value;
+      currentTariff = document.getElementById('tariffSelect').value; // Ensure currentTariff is up-to-date
       console.log('Run optimization with tariff:', currentTariff);
 
-      setLoading(true);
+      setLoadingButtons(true); // Disable all relevant buttons
 
       try {
         const simulationId = document.getElementById('simulationSelect').value;
         const tariffType = currentTariff === 'withDemandCharge' ? 'With Demand Charge' : 'No Demand Charge';
 
         if (!simulationId) {
-          alert('Please select a simulation.');
-          setLoading(false);
+          displayCustomAlert('Please select a simulation.', 'warning');
+          setLoadingButtons(false);
           return;
         }
 
-        const payload = { simulation_id: parseInt(simulationId), tariff_type: tariffType };
+        // Validate tariff inputs before sending to backend for optimization (critical)
+        if (!validateTariffInputs()) {
+            setLoadingButtons(false);
+            return; // Stop if validation fails
+        }
+        
+        // Collect custom tariff details for sending to backend
+        const tariffParams = {
+            offPeakRate: document.getElementById('offPeakRate').value,
+            onPeakRate: document.getElementById('onPeakRate').value,
+            peakPeriodStartHour: document.getElementById('peakPeriodStartHour').value, // HH:MM string
+            peakPeriodEndHour: document.getElementById('peakPeriodEndHour').value,     // HH:MM string
+            demandChargeInput: document.getElementById('demandChargeInput').value 
+        };
+
+        const payload = { 
+            simulation_id: parseInt(simulationId), 
+            tariff_type: tariffType,
+            tariff_params: tariffParams // Include custom tariff details in payload
+        };
         console.log('Sending payload to /api/run_optimization:', JSON.stringify(payload));
 
         const response = await fetch('http://203.189.121.130:5000/api/run_optimization', {
@@ -814,34 +1062,57 @@
 
         if (!response.ok) {
           const errorData = await response.json();
-          alert(errorData.error || 'Server error during optimization.');
-          setLoading(false);
-          return;
+          throw new Error(errorData.error || 'Server error during optimization.');
         }
 
         const result = await response.json();
         if (result.error) {
-          alert(result.error);
-          setLoading(false);
-          return;
+          throw new Error(result.error);
         }
 
+        // Update summary table
         document.getElementById('originalPeakLoad').textContent = `${result.summary.original_peak_load} kW`;
         document.getElementById('optimizedPeakLoad').textContent = `${result.summary.optimized_peak_load} kW`;
-        document.getElementById('peakReduction').textContent = `${result.summary.peak_reduction} kW (${result.summary.peak_reduction_percent}%)`;
-        document.getElementById('originalTotalEnergy').textContent = `${result.summary.original_total_energy} kWh`;
-        document.getElementById('optimizedTotalEnergy').textContent = `${result.summary.optimized_total_energy} kWh`;
-        document.getElementById('originalDemandCost').textContent = `$${result.summary.original_demand_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('optimizedDemandCost').textContent = `$${result.summary.optimized_demand_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('demandCostSavings').textContent = `$${result.summary.demand_cost_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.demand_cost_savings_percent}%)`;
-        document.getElementById('originalEnergyCost').textContent = `$${result.summary.original_energy_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('optimizedEnergyCost').textContent = `$${result.summary.optimized_energy_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('energyCostSavings').textContent = `$${result.summary.energy_cost_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.energy_cost_savings_percent}%)`;
-        document.getElementById('originalTotalCost').textContent = `$${result.summary.original_total_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('optimizedTotalCost').textContent = `$${result.summary.optimized_total_cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('costSavings').textContent = `$${result.summary.cost_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // Daily Metrics
+        document.getElementById('originalTotalDailyEnergy').textContent = `${result.summary.original_total_daily_energy} kWh`;
+        document.getElementById('originalDemandCostDaily').textContent = `$${result.summary.original_demand_cost_daily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('originalEnergyCostDaily').textContent = `$${result.summary.original_energy_cost_daily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('originalTotalCostDaily').textContent = `$${result.summary.original_total_cost_daily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-        renderOptimizedSchedule(result.schedule.optimized_schedule);
+        document.getElementById('optimizedTotalDailyEnergy').textContent = `${result.summary.optimized_total_daily_energy} kWh`;
+        document.getElementById('optimizedDemandCostDaily').textContent = `$${result.summary.optimized_demand_cost_daily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedEnergyCostDaily').textContent = `$${result.summary.optimized_energy_cost_daily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedTotalCostDaily').textContent = `$${result.summary.optimized_total_cost_daily.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Monthly Metrics
+        document.getElementById('originalTotalMonthlyEnergy').textContent = `${result.summary.original_total_monthly_energy} kWh`;
+        document.getElementById('originalDemandCostMonthly').textContent = `$${result.summary.original_demand_cost_monthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('originalEnergyCostMonthly').textContent = `$${result.summary.original_energy_cost_monthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('originalTotalCostMonthly').textContent = `$${result.summary.original_total_cost_monthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        document.getElementById('optimizedTotalMonthlyEnergy').textContent = `${result.summary.optimized_total_monthly_energy} kWh`;
+        document.getElementById('optimizedDemandCostMonthly').textContent = `$${result.summary.optimized_demand_cost_monthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedEnergyCostMonthly').textContent = `$${result.summary.optimized_energy_cost_monthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('optimizedTotalCostMonthly').textContent = `$${result.summary.optimized_total_cost_monthly.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+
+        // Savings
+        document.getElementById('peakReduction').textContent = `${result.summary.peak_reduction} kW (${result.summary.peak_reduction_percent.toFixed(2)}%)`;
+        
+        // Daily Savings
+        document.getElementById('demandCostDailySavings').textContent = `$${result.summary.demand_cost_daily_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.demand_cost_daily_savings_percent.toFixed(2)}%)`;
+        document.getElementById('energyCostDailySavings').textContent = `$${result.summary.energy_cost_daily_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.energy_cost_daily_savings_percent.toFixed(2)}%)`;
+        document.getElementById('totalCostDailySavings').textContent = `$${result.summary.total_cost_daily_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.total_cost_daily_savings_percent.toFixed(2)}%)`;
+
+        // Monthly Savings
+        document.getElementById('demandCostMonthlySavings').textContent = `$${result.summary.demand_cost_monthly_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.demand_cost_monthly_savings_percent.toFixed(2)}%)`;
+        document.getElementById('energyCostMonthlySavings').textContent = `$${result.summary.energy_cost_monthly_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.energy_cost_monthly_savings_percent.toFixed(2)}%)`;
+        document.getElementById('totalCostMonthlySavings').textContent = `$${result.summary.total_cost_monthly_savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${result.summary.total_cost_monthly_savings_percent.toFixed(2)}%)`;
+
+        // Render both original and optimized schedules
+        renderScheduleList('originalSchedule', result.schedule.original_schedule);
+        renderScheduleList('optimizedSchedule', result.schedule.optimized_schedule);
 
         document.getElementById('resultsPlot').src = result.visualization.results_plot;
 
@@ -849,22 +1120,25 @@
 
       } catch (error) {
         console.error('Error during optimization:', error);
-        alert('An error occurred during optimization: ' + error.message);
+        displayCustomAlert('An error occurred during optimization: ' + error.message, 'danger');
       } finally {
-        setLoading(false);
+        setLoadingButtons(false); // Re-enable buttons
       }
     }
 
     function deleteSimulation() {
       const simulationId = document.getElementById('simulationSelect').value;
       if (!simulationId) {
-        alert('Please select a simulation to delete.');
+        displayCustomAlert('Please select a simulation to delete.', 'warning');
         return;
       }
 
-      if (!confirm('Are you sure you want to delete this simulation?')) {
+      // Use a custom confirmation dialog or modal instead of browser's default alert/confirm
+      if (!confirm('Are you sure you want to delete this simulation? This action cannot be undone.')) {
         return;
       }
+
+      setLoadingButtons(true);
 
       fetch(`http://203.189.121.130:5000/api/delete_data`, {
         method: 'DELETE',
@@ -874,21 +1148,27 @@
         body: JSON.stringify({ simulation_id: parseInt(simulationId) })
       })
         .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`); });
+          }
           return response.json();
         })
         .then(data => {
           if (data.message) {
-            alert(data.message);
-            fetchSimulations();
-            document.getElementById('result-section').style.display = 'none';
+            displayCustomAlert(data.message, 'success');
+            fetchSimulations(); // Refresh simulation list
+            document.getElementById('result-section').style.display = 'none'; // Hide results
+            handleSimulationSelect(); // Reset GA params form and button state
           } else {
-            alert('Error: ' + data.error);
+            displayCustomAlert('Error: ' + (data.error || 'Unknown error'), 'danger');
           }
         })
         .catch(error => {
           console.error('Failed to delete simulation:', error);
-          alert('An error occurred while deleting simulation: ' + error.message);
+          displayCustomAlert('An error occurred while deleting simulation: ' + error.message, 'danger');
+        })
+        .finally(() => {
+          setLoadingButtons(false);
         });
     }
 
@@ -899,12 +1179,54 @@
       
       if (simulationId) {
         gaParamsForm.style.display = 'block';
-        runOptimizationBtn.disabled = true;
-        fetchGaParameters(simulationId);
+        runOptimizationBtn.disabled = false; // Enable run optimization button by default if simulation selected
+        
+        // Fetch and populate custom tariff details from DB for the selected simulation
+        fetch(`http://203.189.121.130:5000/api/simulations/${simulationId}/tariff_details`)
+            .then(response => {
+                if (!response.ok && response.status !== 404) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data && !data.error) {
+                    document.getElementById('offPeakRate').value = data.lwbp_rate;
+                    document.getElementById('onPeakRate').value = data.wbp_rate;
+                    document.getElementById('peakPeriodStartHour').value = data.peak_start_hour; // HH:MM
+                    document.getElementById('peakPeriodEndHour').value = data.peak_end_hour; // HH:MM
+                    document.getElementById('demandChargeInput').value = data.demand_charge;
+                    // Also update the tariff select if the fetched data implies a different tariff type
+                    document.getElementById('tariffSelect').value = data.tariff_type.includes("Demand") ? "withDemandCharge" : "noDemandCharge";
+                    toggleDemandChargeInput(); // Ensure visibility is correct after populating
+                } else {
+                    // If no custom tariff details found, reset to empty fields/default logic
+                    document.getElementById('offPeakRate').value = '';
+                    document.getElementById('onPeakRate').value = '';
+                    document.getElementById('peakPeriodStartHour').value = '';
+                    document.getElementById('peakPeriodEndHour').value = '';
+                    document.getElementById('demandChargeInput').value = '';
+                    // Set default tariff type in select if no custom tariff saved
+                    document.getElementById('tariffSelect').value = "withDemandCharge"; 
+                    toggleDemandChargeInput(); // Ensure visibility is correct after reset
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching custom tariff details:', error);
+                displayCustomAlert('Failed to load custom tariff details: ' + error.message, 'danger');
+            });
+
+        fetchGaParameters(simulationId); // Fetch GA parameters as before
       } else {
         gaParamsForm.style.display = 'none';
         resetGaParamsForm();
-        runOptimizationBtn.disabled = true;
+        runOptimizationBtn.disabled = true; // Disable if no simulation selected
+        // Clear tariff inputs when no simulation is selected
+        document.getElementById('offPeakRate').value = '';
+        document.getElementById('onPeakRate').value = '';
+        document.getElementById('peakPeriodStartHour').value = '';
+        document.getElementById('peakPeriodEndHour').value = '';
+        document.getElementById('demandChargeInput').value = '';
+        document.getElementById('tariffSelect').value = "withDemandCharge"; // Reset tariff type
+        toggleDemandChargeInput();
       }
     }
 
@@ -912,7 +1234,7 @@
       fetch(`http://203.189.121.130:5000/api/ga_parameters/${simulationId}`)
         .then(response => {
           if (!response.ok && response.status !== 404) throw new Error(`HTTP error! status: ${response.status}`);
-          return response.status === 404 ? {} : response.json();
+          return response.status === 404 ? {} : response.json(); // Handle 404 by returning empty object
         })
         .then(data => {
           document.getElementById('populationSize').value = data.population_size || '';
@@ -920,10 +1242,13 @@
           document.getElementById('mutationRate').value = data.mutation_rate || '';
           document.getElementById('tournamentSize').value = data.tournament_size || '';
           document.getElementById('elitismRate').value = data.elitism_rate || '';
+          // Enable the optimize button only after GA params are loaded or defaults are set
+          document.querySelector('.btn-optimize').disabled = false;
         })
         .catch(error => {
           console.error('Error fetching GA parameters:', error);
-          alert('Failed to load GA parameters: ' + error.message);
+          displayCustomAlert('Failed to load GA parameters: ' + error.message, 'danger');
+          document.querySelector('.btn-optimize').disabled = true; // Disable if error
         });
     }
 
@@ -938,7 +1263,7 @@
     function saveGaParameters() {
       const simulationId = document.getElementById('simulationSelect').value;
       if (!simulationId) {
-        alert('Please select a simulation first.');
+        displayCustomAlert('Please select a simulation first.', 'warning');
         return;
       }
 
@@ -952,8 +1277,10 @@
       };
 
       if (!validateGaParameters(gaParameters)) {
-        return;
+        return; // Validation message already shown by validateGaParameters
       }
+
+      setLoadingButtons(true);
 
       fetch('http://203.189.121.130:5000/api/save_ga_parameters', {
         method: 'POST',
@@ -962,43 +1289,147 @@
         },
         body: JSON.stringify(gaParameters)
       })
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`); });
+          }
+          return response.json();
+        })
         .then(data => {
           if (data.message) {
-            alert(data.message);
-            document.querySelector('.btn-optimize').disabled = false;
+            displayCustomAlert(data.message, 'success');
+            document.querySelector('.btn-optimize').disabled = false; // Enable optimization after saving params
           } else {
-            alert('Error: ' + data.error);
+            displayCustomAlert('Error: ' + (data.error || 'Unknown error'), 'danger');
           }
         })
         .catch(error => {
           console.error('Error saving GA parameters:', error);
-          alert('An error occurred while saving GA parameters: ' + error.message);
+          displayCustomAlert('An error occurred while saving GA parameters: ' + error.message, 'danger');
+        })
+        .finally(() => {
+          setLoadingButtons(false);
         });
     }
 
     function validateGaParameters(params) {
-      if (!params.population_size || params.population_size < 10) {
-        alert('Population Size must be at least 10.');
+      // Basic validation based on backend rules
+      if (isNaN(params.population_size) || params.population_size < 10) {
+        displayCustomAlert('Population Size must be a number and at least 10.', 'warning');
         return false;
       }
-      if (!params.crossover_rate || params.crossover_rate < 0 || params.crossover_rate > 1) {
-        alert('Crossover Rate must be between 0 and 1.');
+      if (isNaN(params.crossover_rate) || params.crossover_rate < 0 || params.crossover_rate > 1) {
+        displayCustomAlert('Crossover Rate must be a number between 0 and 1.', 'warning');
         return false;
       }
-      if (!params.mutation_rate || params.mutation_rate < 0 || params.mutation_rate > 1) {
-        alert('Mutation Rate must be between 0 and 1.');
+      if (isNaN(params.mutation_rate) || params.mutation_rate < 0 || params.mutation_rate > 1) {
+        displayCustomAlert('Mutation Rate must be a number between 0 and 1.', 'warning');
         return false;
       }
-      if (!params.tournament_size || params.tournament_size < 2) {
-        alert('Tournament Size must be at least 2.');
+      if (isNaN(params.tournament_size) || params.tournament_size < 2) {
+        displayCustomAlert('Tournament Size must be a number and at least 2.', 'warning');
         return false;
       }
-      if (!params.elitism_rate || params.elitism_rate < 0 || params.elitism_rate > 0.5) {
-        alert('Elitism Rate must be between 0 and 0.5.');
+      if (isNaN(params.elitism_rate) || params.elitism_rate < 0 || params.elitism_rate > 0.5) {
+        displayCustomAlert('Elitism Rate must be a number between 0 and 0.5.', 'warning');
         return false;
       }
       return true;
+    }
+
+    // New validation function for custom tariff inputs
+    function validateTariffInputs() {
+        const offPeakRate = document.getElementById('offPeakRate').value;
+        const onPeakRate = document.getElementById('onPeakRate').value;
+        const peakPeriodStartHour = document.getElementById('peakPeriodStartHour').value; // HH:MM string
+        const peakPeriodEndHour = document.getElementById('peakPeriodEndHour').value;   // HH:MM string
+        const demandChargeInput = document.getElementById('demandChargeInput').value;
+
+        // Check if values are empty and required
+        if (offPeakRate === '' || onPeakRate === '' || peakPeriodStartHour === '' || peakPeriodEndHour === '') {
+            displayCustomAlert('All custom tariff fields are required.', 'warning');
+            return false;
+        }
+
+        // Validate numbers
+        if (isNaN(parseFloat(offPeakRate)) || parseFloat(offPeakRate) < 0) {
+            displayCustomAlert('Off-Peak Rate must be a non-negative number.', 'warning');
+            return false;
+        }
+        if (isNaN(parseFloat(onPeakRate)) || parseFloat(onPeakRate) < 0) {
+            displayCustomAlert('On-Peak Rate must be a non-negative number.', 'warning');
+            return false;
+        }
+        
+        // Validate time format (HH:MM)
+        const timePattern = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
+        if (!timePattern.test(peakPeriodStartHour) || !timePattern.test(peakPeriodEndHour)) {
+            displayCustomAlert('Peak Period hours must be in HH:MM format (e.g., 17:00).', 'warning');
+            return false;
+        }
+
+        // Validate demand charge based on tariff type
+        const tariffSelect = document.getElementById('tariffSelect');
+        if (tariffSelect.value === 'withDemandCharge' && (isNaN(parseFloat(demandChargeInput)) || parseFloat(demandChargeInput) < 0)) {
+            displayCustomAlert('Demand Charge must be a non-negative number when "With Demand Charge" is selected.', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+
+
+    // Function to display custom alerts (replace browser's alert)
+    function displayCustomAlert(message, type = 'info') {
+        // You would typically have a modal or dedicated alert div in your HTML
+        // For simplicity, here's a basic implementation that uses an existing div or creates one
+        let alertDiv = document.getElementById('customAlert');
+        if (!alertDiv) {
+            alertDiv = document.createElement('div');
+            alertDiv.id = 'customAlert';
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.left = '50%';
+            alertDiv.style.transform = 'translateX(-50%)';
+            alertDiv.style.zIndex = '1050';
+            alertDiv.style.padding = '15px 20px';
+            alertDiv.style.borderRadius = '5px';
+            alertDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            alertDiv.style.color = 'white';
+            alertDiv.style.textAlign = 'center';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.transition = 'opacity 0.5s ease-in-out';
+            document.body.appendChild(alertDiv);
+        }
+
+        // Set background color based on type
+        switch(type) {
+            case 'success':
+                alertDiv.style.backgroundColor = '#28a745';
+                break;
+            case 'danger':
+                alertDiv.style.backgroundColor = '#dc3545';
+                break;
+            case 'warning':
+                alertDiv.style.backgroundColor = '#ffc107';
+                alertDiv.style.color = '#343a40'; // Dark text for warning
+                break;
+            case 'info':
+            default:
+                alertDiv.style.backgroundColor = '#17a2b8';
+        }
+
+        alertDiv.textContent = message;
+        alertDiv.style.opacity = '1';
+        alertDiv.style.display = 'block';
+
+        // Hide after 5 seconds
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 500); // Wait for transition to finish
+        }, 5000);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1006,7 +1437,8 @@
       fetchSimulations();
       currentTariff = document.getElementById('tariffSelect').value;
       console.log('Initial tariff:', currentTariff);
-      handleSimulationSelect();
+      handleSimulationSelect(); // Call this to set initial state of GA form and optimize button
+      toggleDemandChargeInput(); // Set initial visibility of demand charge input
     });
   </script>
 </body>
